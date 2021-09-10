@@ -3,6 +3,7 @@ import fnmatch
 import pickle
 import faces_recognizer
 
+
 #find/create the dir named "KNOWN_FACES_DIRECTORY" in the current dir
 KNOWN_FACES_DIRECTORY = os.path.dirname(os.path.realpath(__file__)) + "/KNOWN_FACES_DIRECTORY"
 
@@ -29,3 +30,4 @@ def load_known_faces () :
 	except :
 		pass
 	return KNOWN_FACES
+

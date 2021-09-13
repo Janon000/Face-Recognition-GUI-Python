@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import math
+import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
@@ -11,12 +12,15 @@ import imutils
 import sql_handler as sql
 import uuid
 import mysql.connector
+import csv
 
 # file that contains all the read/write fonctionalities
 import file_handlers
 from imutils.video import VideoStream
 
 image_directory = 'C:/Users/Piper/Downloads/Face-Recognition-GUI-Python-master/Face-Recognition-GUI-Python-master/feed_faces/'
+match_directory = os.getcwd()+'/match_directory'
+unknown_directory = os.getcwd()+'/unknown_directory'
 
 campath = 'rtsp://admin:Admin123!!@192.168.2.50:554/Streaming/channels/101/'
 # cap = cv2.VideoCapture(0)
@@ -169,6 +173,14 @@ def save_to_sql(connection, date_time, name, filename):
     mycursor.execute(headshot_sql, val)
     connection.commit()
 
+def save_to_csv(date_time, name, filename):
+    with open('outfile.csv', 'a', newline='') as f:
+        fieldnames = ['date', 'name','imagepath']
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow({'date': date_time, 'name': name, 'imagepath':filename})
+
+
 
 ######################
 #### Main function ###
@@ -194,7 +206,7 @@ def update_frame():
                     # update canvas with image of identified person
                     headshot_canvas.create_image(canvas_width, canvas_height, image=head_images[name], anchor="se")
 
-                    save_to_sql(db_connection, date_time, name, filename)
+                    save_to_csv(date_time, name, filename)
 
             image = convert_to_image(frame)
         else:

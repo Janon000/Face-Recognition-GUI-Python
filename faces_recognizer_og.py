@@ -8,7 +8,7 @@ import timeit
 
 # load the face embeddings
 print("[INFO] loading face encodings...")
-known_data = pickle.loads(open('C:/Users/Piper/Downloads/Face-Recognition-GUI-Python-master/Face-Recognition-GUI-Python-master/embeddings.pickle',"rb").read())
+known_data = pickle.loads(open('C:/Users/Piper/Downloads/Face-Recognition-GUI-Python-master/Face-Recognition-GUI-Python-master/embeddings2.pickle',"rb").read())
 
 
 def identify_faces(frame):
@@ -20,19 +20,20 @@ def identify_faces(frame):
     # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
     rgb_small_frame = small_frame[:, :, ::-1]
 
+    # Check processing time start
+    tic = timeit.default_timer()
+
     # Find all the faces and face encodings in the current frame of video
-    face_locations = face_recognition.face_locations(rgb_small_frame)
+    face_locations = face_recognition.face_locations(rgb_small_frame,3)
+    # Check processing time for encoding
+    toc = timeit.default_timer()
+    print(toc - tic)
 
     if face_locations:
         print('face detected')
-        # Check processing time start
-        tic = timeit.default_timer()
 
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-        # Check processing time for encoding
-        toc = timeit.default_timer()
-        print(toc - tic)
 
         face_names = []
         for face_encoding in face_encodings:
@@ -66,9 +67,9 @@ def identify_faces(frame):
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
 
             # Draw a label with a name below the face
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (255, 0, 0), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+            #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (255, 0, 0))
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 0, 0), 1)
 
             locations = (top,right,bottom,left)
 

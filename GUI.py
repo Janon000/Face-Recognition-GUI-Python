@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
 import math
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import cv2
-import gc
 import time
 import faces_recognizer, faces_recognizer_og
 import imutils
@@ -18,13 +16,13 @@ import csv
 import file_handlers
 from imutils.video import VideoStream
 
-image_directory = 'C:/Users/Piper/Downloads/Face-Recognition-GUI-Python-master/Face-Recognition-GUI-Python-master/feed_faces/'
+image_directory = os.getcwd()+'/feed_faces/'
 match_directory = os.getcwd()+'/match_directory'
 unknown_directory = os.getcwd()+'/unknown_directory'
 
 campath = 'rtsp://admin:Admin123!!@192.168.2.50:554/Streaming/channels/101/'
 # cap = cv2.VideoCapture(0)
-cap = VideoStream(0).start()
+cap = VideoStream(campath).start()
 
 APP_WIDTH = 920  # minimal width of the GUI
 APP_HEIGHT = 534  # minimal height of the gui
@@ -106,7 +104,7 @@ def convert_to_image(frame):
     # so to correctly display the images, color wise, we have
     # to convert them from BGR to RGB
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame = cv2.resize(frame, (800, 600))
+    frame = cv2.resize(frame, (1280, 720))
     # frame = cv2.flip(frame, 1)
     image = Image.fromarray(frame)
     return image
@@ -120,6 +118,7 @@ def enable_recognition():
     else:
         RECOGNIZE = True
         recognition_button["bg"] = "red"
+        print("recognizing..")
 
 
 def recognize_faces(frame):
@@ -150,12 +149,15 @@ def crop_face(frame, name, locations):
     # determine vertical and horizontal padding needed for the detected face
     v_padding = math.floor((canvas_height - (bottom - top)) / 2)
     h_padding = math.floor((canvas_width - (right - left)) / 2)
-    pil_image = Image.fromarray(frame[(top - v_padding):(bottom + v_padding), (left - h_padding):(right + h_padding)])
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(frame[(max(top - v_padding,0)):(max(bottom + v_padding,400)), (max(left - h_padding,0)):(max(right + h_padding,300))])
+
     # save to dictionary to avoid garbage collection
     head_images[name] = ImageTk.PhotoImage(pil_image)
-    print('crop succesful')
+
+   #store image to file system
     filename = store_image(pil_image)
-    return head_images[name], filename  # Different return value than before, simplifies other stuff
+    return head_images[name], filename
 
 
 def store_image(pil_image):
@@ -177,7 +179,7 @@ def save_to_csv(date_time, name, filename):
     with open('outfile.csv', 'a', newline='') as f:
         fieldnames = ['date', 'name','imagepath']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+        #writer.writeheader()
         writer.writerow({'date': date_time, 'name': name, 'imagepath':filename})
 
 
@@ -188,29 +190,32 @@ def save_to_csv(date_time, name, filename):
 
 def update_frame():
     global image
+    frame_counter = 1
     frame = cap.read()
     if frame is not None:
         if RECOGNIZE:
-            frame, name, locations = recognize_faces(frame)
-            # frame = display_frames_per_second(frame, START_TIME)
-            if locations:
-                headshot, filename = check_recent(frame, name, locations)
-                if headshot is not None:
-                    # insert name and timestamp into text widget
-                    date_time = time.strftime('%Y-%m-%d, %H:%M:%S')
-                    textfeed.configure(state='normal')
-                    textfeed.insert(1.0, f"{name} {date_time} " + "\n\n")
-                    textfeed.configure(state='disabled')
+            if frame_counter==1:
+                frame, name, locations = recognize_faces(frame)
+                # frame = display_frames_per_second(frame, START_TIME)
+                if locations:
+                    headshot, filename = check_recent(frame, name, locations)
+                    if headshot is not None:
+                        # insert name and timestamp into text widget
+                        date_time = time.strftime('%Y-%m-%d, %H:%M:%S')
+                        textfeed.configure(state='normal')
+                        textfeed.insert(1.0, f"{name} {date_time} " + "\n\n")
+                        textfeed.configure(state='disabled')
 
-                    headshot_canvas.delete()
-                    # update canvas with image of identified person
-                    headshot_canvas.create_image(canvas_width, canvas_height, image=head_images[name], anchor="se")
+                        headshot_canvas.delete()
+                        # update canvas with image of identified person
+                        headshot_canvas.create_image(canvas_width, canvas_height, image=head_images[name], anchor="se")
 
-                    save_to_csv(date_time, name, filename)
+                        save_to_csv(date_time, name, filename)
+            #frame_counter += 1
 
-            image = convert_to_image(frame)
-        else:
-            image = convert_to_image(frame)
+        image = convert_to_image(frame)
+        #else:
+        #    image = convert_to_image(frame)
 
     #tags = headshot_canvas.find_all()
     #if len(tags) > 2:
@@ -219,7 +224,7 @@ def update_frame():
         #headshot_canvas.delete()
 
     photo.paste(image)
-    root.after(round(60), update_frame)  # update displayed image after: round(1000/FPS) [in milliseconds]
+    root.after(round(40), update_frame)  # update displayed image after: round(1000/FPS) [in milliseconds]
 
 
 def update_activityfeed():
@@ -272,7 +277,7 @@ root.rowconfigure(1, weight=0)
 root.columnconfigure(2, weight=1)
 root.rowconfigure(2, weight=1)
 
-camera_canvas = tk.Canvas(root, width=800 - 5, height=600 - 5)
+camera_canvas = tk.Canvas(root, width=1280 - 5, height=720 - 5)
 camera_canvas.grid(row=0, column=0, pady=5, sticky='n')
 
 # leftframe = tk.Canvas(root, width=300, highlightthickness=1, highlightbackground='#03a9f4', bg='#152238')
@@ -305,12 +310,12 @@ recognition_button.focus()
 ### Initial frame ###
 
 frame = cap.read()
-frame = imutils.resize(frame, width=800)
+#frame = imutils.resize(frame, width=800)
 if frame is not None:
     image = convert_to_image(frame)
     photo = ImageTk.PhotoImage(image=image)
-    camera_canvas.create_image(800, 600, image=photo, anchor="se")
-
+ #   camera_canvas.create_image(800, 600, image=photo, anchor="se")
+    camera_canvas.create_image(1280, 720, image=photo, anchor="se")
 ### Start the show ###
 
 

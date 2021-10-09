@@ -22,7 +22,7 @@ unknown_directory = os.getcwd()+'/unknown_directory'
 
 campath = 'rtsp://admin:Admin123!!@192.168.2.50:554/Streaming/channels/101/'
 # cap = cv2.VideoCapture(0)
-cap = VideoStream(campath).start()
+cap = VideoStream(0).start()
 
 APP_WIDTH = 920  # minimal width of the GUI
 APP_HEIGHT = 534  # minimal height of the gui

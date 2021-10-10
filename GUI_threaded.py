@@ -194,10 +194,12 @@ class Threaded_Camera:
     def __init__(self):
         self.active = True
         self.cap = cv2.VideoCapture(0)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
         # default value at start
         self.results = []
         self.frame = None
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
 
         # Start frame retrieval thread
         self.thread_queue = queue.Queue()

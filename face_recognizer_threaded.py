@@ -26,9 +26,6 @@ def identify_faces(frame):
 
         # Find all the faces and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(rgb_small_frame,2)
-        # Check processing time for encoding
-        toc = timeit.default_timer()
-        print(toc - tic)
 
         results = []
 
@@ -36,7 +33,9 @@ def identify_faces(frame):
             print('face detected')
 
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
+            # Check processing time for encoding
+            toc = timeit.default_timer()
+            print(toc - tic)
 
             face_names = []
 

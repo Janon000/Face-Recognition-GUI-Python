@@ -206,9 +206,9 @@ class Threaded_Camera:
         self.thread.start()
 
         # Start results thread
-        self.results_thread = Thread(target=self.do_recognition())
-        self.results_thread.daemon = True
-        self.results_thread.start()
+        #self.results_thread = Thread(target=self.do_recognition())
+        #self.results_thread.daemon = True
+        #self.results_thread.start()
 
     def show_frame(self):
         print("Started")
@@ -227,12 +227,6 @@ class Threaded_Camera:
                         left = result.get('left')
                         bottom = result.get('bottom')
 
-                        # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                        top *= 4
-                        right *= 4
-                        bottom *= 4
-                        left *= 4
-
                         # Draw a box around the face
                         cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
 
@@ -240,6 +234,8 @@ class Threaded_Camera:
                         # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (255, 0, 0))
                         font = cv2.FONT_HERSHEY_SIMPLEX
                         cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 0, 0), 1)
+
+            #cv2.imshow('test',frame)
 
 
             self.frame = frame
@@ -253,8 +249,7 @@ class Threaded_Camera:
     def do_recognition(self):
         if not hasattr(self, 'frame'):
             return
-        while self.active:
-            self.results = recognize_faces(self.frame)
+        self.results = recognize_faces(self.frame)
 
     def get_frame_results(self):
         return self.frame, self.results
@@ -336,6 +331,7 @@ class Tkinter_gui(tk.Tk):
 
 
 
+
     def start(self):
         if not self.running:
             self.running = True
@@ -347,6 +343,7 @@ class Tkinter_gui(tk.Tk):
 
     #Update gui with frames from camera thread
     def update_frame(self):
+        self.threaded_camera.do_recognition()
 
         print('updating')
 
@@ -371,7 +368,7 @@ class Tkinter_gui(tk.Tk):
                         self.textfeed.configure(state='disabled')
                         self.headshot_canvas.delete()
                         # update canvas with image of identified person
-                        self.headshot_canvas.create_image(canvas_width, canvas_height, image=self.head_images[name], anchor="se")
+                        self.headshot_canvas.create_image(canvas_width, canvas_height, image=head_images[name], anchor="se")
                         #save to csv instead of db
                         save_to_csv(date_time, name, filename)
 

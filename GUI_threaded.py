@@ -11,7 +11,7 @@ import sql_handler as sql
 import uuid
 import mysql.connector
 import csv
-from threading import Thread
+from threading import Thread, Lock
 import numpy as np
 import queue
 
@@ -24,7 +24,7 @@ match_directory = os.getcwd()+'/match_directory'
 unknown_directory = os.getcwd()+'/unknown_directory'
 
 campath = 'rtsp://admin:Admin123!!@192.168.2.50:554/Streaming/channels/101/'
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(campath)
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
 #cap = VideoStream(0).start()
@@ -193,29 +193,24 @@ def save_to_csv(date_time, name, filename):
 class Threaded_Camera:
     def __init__(self):
         self.active = True
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(campath)
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
         # default value at start
         self.results = []
         self.frame = None
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        self.mutex = Lock()
 
         # Start frame retrieval thread
-        self.thread_queue = queue.Queue()
+        self.q = queue.Queue()
         self.thread = Thread(target=self.show_frame, args=())
         self.thread.daemon = True
         self.thread.start()
 
-        # Start results thread
-        #self.results_thread = Thread(target=self.do_recognition())
-        #self.results_thread.daemon = True
-        #self.results_thread.start()
-
     def show_frame(self):
         print("Started")
         while self.cap.isOpened():
-            #(frame_raw) = self.cap.read()
             (status, frame_raw) = self.cap.read()
             frame = cv2.flip(frame_raw, 1)
             results = []
@@ -237,12 +232,72 @@ class Threaded_Camera:
                         font = cv2.FONT_HERSHEY_SIMPLEX
                         cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 0, 0), 1)
 
-            #cv2.imshow('test',frame)
+            self.frame = frame
+            self.results = results
 
+
+    def show_frame_mutex(self):
+        print("Started")
+        while self.cap.isOpened():
+            self.mutex.acquire()
+            (status, frame_raw) = self.cap.grab()
+            self.mutex.release()
+            frame = cv2.flip(frame_raw, 1)
+            results = []
+            if status:
+                if self.results:
+                    results = self.results
+                    for result in results:
+                        name = result.get('name')
+                        top = result.get('top')
+                        right = result.get('right')
+                        left = result.get('left')
+                        bottom = result.get('bottom')
+
+                        # Draw a box around the face
+                        cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+
+                        # Draw a label with a name below the face
+                        # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (255, 0, 0))
+                        font = cv2.FONT_HERSHEY_SIMPLEX
+                        cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 0, 0), 1)
 
             self.frame = frame
             self.results = results
-            #self.thread_queue.put(frame)
+
+    def show_frame_queue(self):
+        print("Started")
+        while self.cap.isOpened():
+            (status, frame_raw) = self.cap.read()
+            if not self.q.empty():
+                try:
+                    self.q.get_nowait()  # discard previous (unprocessed) frame
+                except queue.Empty:
+                    pass
+
+            frame = cv2.flip(frame_raw, 1)
+            results = []
+            if status:
+                if self.results:
+                    results = self.results
+                    for result in results:
+                        name = result.get('name')
+                        top = result.get('top')
+                        right = result.get('right')
+                        left = result.get('left')
+                        bottom = result.get('bottom')
+
+                        # Draw a box around the face
+                        cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+
+                        # Draw a label with a name below the face
+                        # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (255, 0, 0))
+                        font = cv2.FONT_HERSHEY_SIMPLEX
+                        cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 0, 0), 1)
+
+            self.q.put(frame, results)
+            self.frame = frame
+            self.results = results
 
 
     def is_active(self):
@@ -252,8 +307,18 @@ class Threaded_Camera:
         if not hasattr(self, 'frame'):
             return
         self.results = recognize_faces(self.frame)
+        print(self.results)
 
     def get_frame_results(self):
+        return self.frame, self.results
+
+    def get_frame_queue(self):
+        return self.q.get()
+
+    def get_frame_mutex(self):
+        self.mutex.acquire()
+        (status, frame_raw) = self.cap.retrieve()
+        self.mutex.release()
         return self.frame, self.results
 
 
@@ -262,7 +327,6 @@ class Tkinter_gui(tk.Tk):
         super().__init__()
 
         self.threaded_camera = Threaded_Camera()
-        #self.threaded_camera.do_recognition()
 
         # initialize objects needed for face image cropping and saving to database/file system
         self.head_images = {}
@@ -330,8 +394,6 @@ class Tkinter_gui(tk.Tk):
 
         self.running = True
         self.update_frame()
-
-
 
 
     def start(self):

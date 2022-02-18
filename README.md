@@ -1,8 +1,8 @@
-# Build an "intelligent surveillace" desktop app using Python 
+# Facial Recognition Desktop Application
 
 <img src="images/subscribe.png" >
 
->[YOUTUBE VIDEO](https://youtu.be/dMvlcd1A_kY)
+>
 
 ---
 
@@ -20,11 +20,6 @@ It uses basic computer vision techniques to apply computer vision towards facial
 
 ---
 
-## Disclamer
-
-This article assumes having basic knowledge of Python, Tkinter, OpenCV, and face_recognition, since these will not be covered here.
-
----
 
 ## Face_recognition & OpenCV
 
@@ -53,7 +48,3 @@ The password won't be visible, and instead it'll be displayed in '-' characters,
 - You can take screenshots too with the "Take screenshot" button.
 
 ---
-
-## Author info
-
-[Radhi SGHAIER, Linkedin](https://www.linkedin.com/in/radhi-sghaier/)

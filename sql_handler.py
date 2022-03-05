@@ -1,6 +1,5 @@
 import mysql.connector
 from mysql.connector import Error
-import pandas as pd
 
 
 def create_server_connection(host_name, user_name, user_password):
@@ -52,6 +51,7 @@ def execute_query(connection, sql):
     except Error as err:
         print(f"Error: '{err}'")
 
+
 def create_db_connection1():
     host_name = 'localhost'
     user_name = 'root'
@@ -66,10 +66,8 @@ def create_db_connection1():
             database=db_name
         )
 
-
         print("MySQL Database connection successful")
     except Error as err:
         print(f"Error: '{err}'")
 
     return connection
-

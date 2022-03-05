@@ -1,19 +1,21 @@
+"""
+Module for performing facial recognition
+"""
+
 import cv2
 import face_recognition
 import pickle
 import numpy as np
 import timeit
-import time
-
-
+import os
 
 # load the face embeddings
-print("[INFO] loading face encodingsz...")
-known_data = pickle.loads(open('C:/Users/Piper/Downloads/Face-Recognition-GUI-Python-master/Face-Recognition-GUI-Python-master/embeddings2.pickle',"rb").read())
+print("[INFO] loading face encodings...")
+known_data = pickle.loads(open(
+    os.getcwd()+'/embeddings2.pickle', "rb").read())
 
 
 def identify_faces(frame):
-
     try:
         # Resize frame of video to 1/4 size for faster face recognition processing
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -25,7 +27,7 @@ def identify_faces(frame):
         tic = timeit.default_timer()
 
         # Find all the faces and face encodings in the current frame of video
-        face_locations = face_recognition.face_locations(rgb_small_frame,2)
+        face_locations = face_recognition.face_locations(rgb_small_frame, 1)
 
         results = []
 
@@ -60,9 +62,7 @@ def identify_faces(frame):
                 right *= 4
                 bottom *= 4
                 left *= 4
-                results.append({'name':name,'top':top,'right':right,'bottom':bottom,'left':left})
-
-
+                results.append({'name': name, 'top': top, 'right': right, 'bottom': bottom, 'left': left})
 
             return results
         else:
@@ -72,5 +72,26 @@ def identify_faces(frame):
         None
 
 
-    #time.sleep(0.4)
-    #return [{'name': 'Brictoni Piper', 'top': 156, 'right': 388, 'bottom': 308, 'left': 236}]
+def enc(path, name):
+    # try:
+    # Load a sample picture and learn how to recognize it.
+    filepath = os.path.abspath(path)
+    snapshot_image = face_recognition.load_image_file(filepath)
+    face_bounding_boxes = face_recognition.face_locations(snapshot_image)
+    if len(face_bounding_boxes) != 1:
+        warn_message = 'Cant be used as template. Ensure only 1 face is image'
+        return warn_message
+    else:
+        snapshot_face_encoding = face_recognition.face_encodings(snapshot_image)[0]
+        known_data["names"].append(name)
+        known_data["embeddings"].append(snapshot_face_encoding)
+        print(known_data)
+
+        # dump the facial encodings + names to disk
+        print("[INFO] reserializing {} encodings...")
+        f = open(os.getcwd() + '/embeddings3.pickle', "wb")
+        f.write(pickle.dumps(known_data))
+        f.close()
+        return None
+# except:
+#    return "Error"
